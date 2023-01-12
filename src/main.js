@@ -7,7 +7,7 @@ const jsonViewerEl = document.querySelector(".json-viewer");
 const renderBtn = document.querySelector("#btn-render");
 
 const getJson = async () => {
-  const result = await (await fetch("./src/data/data.json")).json();
+  const result = await (await fetch("./data/data.json")).json();
   return result;
 };
 
