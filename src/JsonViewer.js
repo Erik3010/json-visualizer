@@ -9,10 +9,18 @@ import {
 } from "./constants";
 
 class JsonViewer {
-  constructor({ data }) {
-    this.container = document.querySelector(".json-viewer");
+  constructor({ container, data }) {
+    this.container = container;
     this.data = data;
 
+    this.mouseDownHandler = this.handleMouseDown.bind(this);
+    this.mouseMoveHandler = this.handleMouseMove.bind(this);
+    this.mouseUpHandler = this.handleMouseUp.bind(this);
+    this.mouseWheelHandler = this.handleMouseWheel.bind(this);
+
+    this.init();
+  }
+  initState() {
     this.baseNode = null;
     this.lines = [];
 
@@ -26,9 +34,23 @@ class JsonViewer {
     };
     this.scale = 1;
     this.prevPosition = null;
+  }
+  init() {
+    this.initState();
+
+    const { height } = this.container.getBoundingClientRect();
+    this.baseNode = new Node({
+      value: this.data,
+      x: 50,
+      y: height / 2,
+      isBaseNode: true,
+    });
+
+    this.container.replaceChildren();
 
     this.setSVG();
-    this.registerListener();
+    this.registListener();
+    this.render();
   }
   setSVG() {
     const { width, height } = this.container.getBoundingClientRect();
@@ -50,66 +72,17 @@ class JsonViewer {
     this.svg.appendChild(this.wrapperEl);
     this.container.appendChild(this.svg);
   }
-  registerListener() {
-    this.container.addEventListener(
-      "mousedown",
-      this.handleMouseDown.bind(this)
-    );
-    this.container.addEventListener(
-      "mousemove",
-      this.handleMouseMove.bind(this)
-    );
-    this.container.addEventListener("mouseup", this.handleMouseUp.bind(this));
-
-    this.container.addEventListener("wheel", this.handleMouseWheel.bind(this));
+  registListener() {
+    this.container.addEventListener("mousedown", this.mouseDownHandler);
+    this.container.addEventListener("mousemove", this.mouseMoveHandler);
+    this.container.addEventListener("mouseup", this.mouseUpHandler);
+    this.container.addEventListener("wheel", this.mouseWheelHandler);
   }
-  getMousePosition(event) {
-    const { top, left } = this.container.getBoundingClientRect();
-
-    return {
-      x: event.clientX - left,
-      y: event.clientY - top,
-    };
-  }
-  handleMouseWheel(event) {
-    const { x, y } = this.getMousePosition(event);
-
-    const delta = {
-      x: x - this.position.x,
-      y: y - this.position.y,
-    };
-
-    const zoom = event.deltaY < 0 ? ZOOM_SCALE : 1 / ZOOM_SCALE;
-
-    this.position.x = x - delta.x * zoom;
-    this.position.y = y - delta.y * zoom;
-
-    this.scale *= zoom;
-
-    this.updateView();
-  }
-  handleMouseDown(event) {
-    this.prevPosition = this.getMousePosition(event);
-  }
-  handleMouseMove(event) {
-    if (!this.prevPosition) return;
-
-    const { x, y } = this.getMousePosition(event);
-
-    const delta = {
-      x: x - this.prevPosition.x,
-      y: y - this.prevPosition.y,
-    };
-
-    this.position.x += delta.x;
-    this.position.y += delta.y;
-
-    this.prevPosition = { x, y };
-
-    this.updateView();
-  }
-  handleMouseUp() {
-    this.prevPosition = null;
+  unRegistListener() {
+    this.container.removeEventListener("mousedown", this.mouseDownHandler);
+    this.container.removeEventListener("mousemove", this.mouseMoveHandler);
+    this.container.removeEventListener("mouseup", this.mouseUpHandler);
+    this.container.removeEventListener("wheel", this.mouseWheelHandler);
   }
   get gridPattern() {
     const defs = Helper.createElement("defs");
@@ -137,23 +110,10 @@ class JsonViewer {
 
     return defs;
   }
-  init() {
-    const { width, height } = this.container.getBoundingClientRect();
-
-    this.baseNode = new Node({
-      value: this.data,
-      x: 50,
-      y: height / 2,
-      isBaseNode: true,
-    });
-
-    this.buildTree(this.baseNode);
-    this.renderTree();
-    this.computeTreePosition();
-    this.updateTreePosition();
-    this.renderLine();
-
-    console.log(this.baseNode);
+  updateData(data) {
+    this.data = data;
+    this.unRegistListener();
+    this.init();
   }
   buildTreeFromArray(parent, array) {
     for (const item of array) {
@@ -253,6 +213,15 @@ class JsonViewer {
       `translate(${x}, ${y}) scale(${this.scale})`
     );
   }
+  render() {
+    this.buildTree(this.baseNode);
+    this.renderTree();
+    this.computeTreePosition();
+    this.updateTreePosition();
+    this.renderLine();
+
+    console.log(this.baseNode);
+  }
   renderTree(parent = null) {
     const node = parent ?? this.baseNode;
 
@@ -274,6 +243,54 @@ class JsonViewer {
 
       this.wrapperEl.appendChild(line.el);
     }
+  }
+  handleMouseWheel(event) {
+    const { x, y } = this.getMousePosition(event);
+
+    const delta = {
+      x: x - this.position.x,
+      y: y - this.position.y,
+    };
+
+    const zoom = event.deltaY < 0 ? ZOOM_SCALE : 1 / ZOOM_SCALE;
+
+    this.position.x = x - delta.x * zoom;
+    this.position.y = y - delta.y * zoom;
+
+    this.scale *= zoom;
+
+    this.updateView();
+  }
+  handleMouseDown(event) {
+    this.prevPosition = this.getMousePosition(event);
+  }
+  handleMouseMove(event) {
+    if (!this.prevPosition) return;
+
+    const { x, y } = this.getMousePosition(event);
+
+    const delta = {
+      x: x - this.prevPosition.x,
+      y: y - this.prevPosition.y,
+    };
+
+    this.position.x += delta.x;
+    this.position.y += delta.y;
+
+    this.prevPosition = { x, y };
+
+    this.updateView();
+  }
+  handleMouseUp() {
+    this.prevPosition = null;
+  }
+  getMousePosition(event) {
+    const { top, left } = this.container.getBoundingClientRect();
+
+    return {
+      x: event.clientX - left,
+      y: event.clientY - top,
+    };
   }
 }
 
