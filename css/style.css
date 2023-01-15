@@ -73,7 +73,7 @@ body {
   stroke-width: 1;
   stroke: #646cff;
   cursor: pointer;
-  transition: border-color 0.25s;
+  transition: border-color 0.25s, opacity 0.25s;
 }
 
 .node-content {
@@ -84,6 +84,7 @@ body {
 .node-content-wrapper {
   padding: 0.75rem;
   width: max-content;
+  transition: opacity 0.25s;
 }
 
 .node-content span {
@@ -94,14 +95,6 @@ body {
   white-space: nowrap;
 }
 
-.node-content-line {
-  height: 1.125rem;
-  display: block;
-  font-weight: 500;
-  overflow: hidden;
-  width: max-content;
-}
-
 .line {
   stroke: #ccc;
   cursor: pointer;
@@ -110,4 +103,22 @@ body {
 
 .arrow-head {
   fill: #ccc;
+}
+
+.line.highlight {
+  stroke: #646cff;
+}
+
+.line.highlight .arrow-head {
+  fill: #646cff;
+}
+
+.line.unactive,
+.line.unactive .arrow-head {
+  opacity: 0.53;
+}
+
+.node.unactive,
+.node.unactive + .node-content .node-content-wrapper {
+  opacity: 0.3;
 }

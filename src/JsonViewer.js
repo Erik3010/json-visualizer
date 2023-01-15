@@ -34,12 +34,18 @@ class JsonViewer {
     };
     this.scale = 1;
     this.prevPosition = null;
+
+    this.selectedNode = null;
+    this.unactiveNodes = [];
   }
   init() {
     this.initState();
 
     const { height } = this.container.getBoundingClientRect();
     this.baseNode = new Node({
+      id: Helper.randomId(),
+      hoverCb: this.handleHoverNode.bind(this),
+      unHoverCb: this.handleUnHoverNode.bind(this),
       value: this.data,
       x: 50,
       y: height / 2,
@@ -160,8 +166,11 @@ class JsonViewer {
   createNode(value, parent, isChildren = true) {
     const node = new Node({
       value,
+      id: Helper.randomId(),
       x: parent.x + parent.width,
       y: parent.y + parent.height / 2,
+      hoverCb: this.handleHoverNode.bind(this),
+      unHoverCb: this.handleUnHoverNode.bind(this),
     });
     isChildren && parent.addChildren(node);
 
@@ -243,6 +252,87 @@ class JsonViewer {
 
       this.wrapperEl.appendChild(line.el);
     }
+  }
+  buildPath(stack, to) {
+    const path = [to];
+    let parent = stack.find((node) => node.to.id === to.id)?.from;
+    while (parent) {
+      path.push(parent);
+      parent = stack.find((node) => node.to.id === parent.id)?.from;
+    }
+
+    return path;
+  }
+  findChildren(nodeId) {
+    const stack = [];
+    const queue = [this.baseNode];
+    const visited = new Set();
+
+    while (queue.length) {
+      const node = queue.shift();
+
+      if (visited.has(node.id)) continue;
+      visited.add(node.id);
+
+      if (node.id === nodeId) return this.buildPath(stack, node);
+      // if (node.id === nodeId) return stack;
+
+      for (const child of node.children) {
+        if (visited.has(child.id)) continue;
+
+        queue.push(child);
+        stack.push({ from: node, to: child });
+      }
+    }
+
+    return [];
+  }
+  handleHoverNode(event, node) {
+    if (node.id === this.selectedNode?.id) return;
+
+    this.selectedNode = node;
+
+    const path = this.findChildren(node.id);
+
+    for (const pathNode of path) {
+      if (pathNode.isBaseNode) continue;
+
+      const line = this.lines.find((line) => line.to.id === pathNode.id);
+      line.highlight = true;
+    }
+
+    const traverseTree = (node) => {
+      if (!path.find((pathNode) => pathNode.id === node.id)) {
+        node.unactive = true;
+        this.unactiveNodes.push(node);
+
+        if (!node.isBaseNode) {
+          const line = this.lines.find((line) => line.to.id === node.id);
+          line.unactive = true;
+        }
+      }
+
+      for (const child of node.children) {
+        traverseTree(child);
+      }
+    };
+
+    traverseTree(this.baseNode);
+  }
+  handleUnHoverNode(event, node) {
+    for (const line of this.lines) {
+      line.highlight = false;
+      line.unactive = false;
+    }
+
+    for (const unactiveNode of this.unactiveNodes) {
+      unactiveNode.unactive = false;
+    }
+
+    this.unactiveNodes = [];
+    this.selectedNode = null;
+
+    // console.log(node.id);
   }
   handleMouseWheel(event) {
     const { x, y } = this.getMousePosition(event);

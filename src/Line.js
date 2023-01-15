@@ -7,8 +7,33 @@ class Line {
     this.to = to;
 
     this.el = null;
+    this._highlight = false;
+    this._unactive = false;
 
     this.render();
+  }
+  get highlight() {
+    return this._highlight;
+  }
+  get unactive() {
+    return this._unactive;
+  }
+  set highlight(value) {
+    this._highlight = value;
+    this.updateState("highlight", value);
+  }
+  set unactive(value) {
+    this._unactive = value;
+    this.updateState("unactive", value);
+  }
+  updateState(className, value) {
+    const actionMap = {
+      true: "add",
+      false: "remove",
+    };
+    const state = actionMap[value];
+
+    this.el.classList[state](className);
   }
   render() {
     const line = Helper.createElement("g", { classList: ["line"] });

@@ -2,13 +2,20 @@ import Helper from "./Helper";
 
 class Node {
   constructor({
+    id,
     x,
     y,
     value,
     width = null,
     height = null,
     isBaseNode = false,
+    hoverCb,
+    unHoverCb,
   }) {
+    this.id = id;
+    this.hoverCb = hoverCb;
+    this.unHoverCb = unHoverCb;
+
     this.value = value;
     this.el = null;
     this.children = [];
@@ -27,6 +34,8 @@ class Node {
 
     this.radius = 15;
 
+    this._unactive = false;
+
     this.childrenHeight = 0;
     this.normalizedWidth = null;
 
@@ -44,6 +53,9 @@ class Node {
   get height() {
     return this._height;
   }
+  get unactive() {
+    return this._unactive;
+  }
   set x(x) {
     this._x = x;
     this.updateNode("x");
@@ -60,15 +72,34 @@ class Node {
     this._height = height;
     this.updateNode("height");
   }
+  set unactive(value) {
+    this._unactive = value;
+    this.updateState("unactive", value);
+  }
   updateNode(name) {
     this.nodeEl.setAttribute(name, this[name]);
     this.foreignObjectEl.setAttribute(name, this[name]);
+  }
+  updateState(className, value) {
+    const actionMap = {
+      true: "add",
+      false: "remove",
+    };
+    const state = actionMap[value];
+
+    this.nodeEl.classList[state](className);
   }
   adjustSize() {
     const { width, height } = this.contentWrapperEl.getBoundingClientRect();
 
     this.width = width;
     this.height = height;
+  }
+  registListener() {
+    this.el.addEventListener("mouseover", (event) => this.hoverCb(event, this));
+    this.el.addEventListener("mouseleave", (event) =>
+      this.unHoverCb(event, this)
+    );
   }
   prepareToRender() {
     this.el = Helper.createElement("g");
@@ -110,6 +141,8 @@ class Node {
       classList: ["node-content-wrapper"],
       withNamespace: false,
     });
+
+    this.registListener();
   }
   render() {
     this.prepareToRender();
