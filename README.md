@@ -19,4 +19,4 @@ This project was built because sometimes it is hard to read the JSON data in a t
 
 ## Credit
 
-This project is highly inspired by [JSON Crack](https://github.com/AykutSarac/jsoncrack.com) by [Aykut Sarac](https://github.com/AykutSarac)
+This project is highly inspired by [JSON Crack](https://github.com/AykutSarac/jsoncrack.com)
